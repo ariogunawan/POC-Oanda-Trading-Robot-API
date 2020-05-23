@@ -11,7 +11,7 @@ class kucingJoget():
     def __init__(self):
         self.session = requests.Session()
         self.headers = ol.headers
-                
+
     def getAccountId(self):
         method = 'GET'
         url = '/v3/accounts'
@@ -63,7 +63,31 @@ class kucingJoget():
             '/candles?count=' + d_getInstrumentCandles['count'] + \
             '&price=' + d_getInstrumentCandles['price'] + \
             '&granularity=' + d_getInstrumentCandles['granularity']
+        if not(d_getInstrumentCandles['from'] is None):
+            url += '&from=' + d_getInstrumentCandles['from']
         endpoint_url = ol.login.get('endpoint_url')
         endpoint_url += url
         r = self.session.request(method, endpoint_url, headers=self.headers)
         return r.json()
+
+    def getInstrumentOrderBook(self, d_getInstrumentOrderBook):
+        method = 'GET'
+        url = '/v3/instruments/' + d_getInstrumentOrderBook['instrument'] + \
+            '/orderBook'
+        if not(d_getInstrumentOrderBook['time'] is None):
+            url += '?time=' + d_getInstrumentOrderBook['time']
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()
+    
+    def getInstrumentPositionBook(self, d_getInstrumentPositionBook):
+        method = 'GET'
+        url = '/v3/instruments/' + d_getInstrumentPositionBook['instrument'] + \
+            '/positionBook'
+        if not(d_getInstrumentPositionBook['time'] is None):
+            url += '?time=' + d_getInstrumentPositionBook['time']
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()    
