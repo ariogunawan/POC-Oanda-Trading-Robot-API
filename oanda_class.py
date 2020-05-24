@@ -122,7 +122,7 @@ class kucingJoget():
         endpoint_url += url
         r = self.session.request(method, endpoint_url, headers=self.headers)
         return r.json()    
-#
+
     def getAccountTrades(self, d_getAccountTrades):
         method = 'GET'
         url = '/v3/accounts/' + ol.login.get('account') + \
@@ -149,6 +149,35 @@ class kucingJoget():
             '/trades'
         if not(d_getAccountTradeDetails.get('tradeSpecifier') is None or d_getAccountTradeDetails['tradeSpecifier'] is None):
             url += '/' + d_getAccountTradeDetails['tradeSpecifier']
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()    
+
+    def getAccountPositions(self):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/positions'
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()
+
+    def getAccountOpenPositions(self):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/openPositions'
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()        
+
+    def getAccountPositionsInstrument(self, d_getAccountPositionsInstrument):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/positions'
+        if not(d_getAccountPositionsInstrument.get('instrument') is None or d_getAccountPositionsInstrument['instrument'] is None):
+            url += '/' + d_getAccountPositionsInstrument['instrument']
         endpoint_url = ol.login.get('endpoint_url')
         endpoint_url += url
         r = self.session.request(method, endpoint_url, headers=self.headers)

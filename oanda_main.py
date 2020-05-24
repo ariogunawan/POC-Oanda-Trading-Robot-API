@@ -73,11 +73,21 @@ d_getAccountOrderDetails = {'orderSpecifier' : None}
 
 ## getAccountTrades
 d_getAccountTrades = {}
-print(x.getAccountTrades(d_getAccountTrades))
+#print(x.getAccountTrades(d_getAccountTrades))
 
 ## getAccountOpenTrades
-print(x.getAccountOpenTrades())
+#print(x.getAccountOpenTrades())
 
 ## getAccountTradeDetails
 d_getAccountTradeDetails = {'tradeSpecifier' : None}
-print(x.getAccountTradeDetails(d_getAccountTradeDetails))
+#print(x.getAccountTradeDetails(d_getAccountTradeDetails))
+
+## getAccountPositions
+print(x.getAccountPositions())
+
+## getAccountOpenPositions
+print(x.getAccountOpenPositions())
+
+## getAccountPositionsInstrument
+d_getAccountPositionsInstrument = {'instrument' : 'USD_JPY'}
+print(x.getAccountPositionsInstrument(d_getAccountPositionsInstrument))
