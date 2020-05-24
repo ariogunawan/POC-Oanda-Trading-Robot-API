@@ -182,4 +182,83 @@ class kucingJoget():
         endpoint_url += url
         r = self.session.request(method, endpoint_url, headers=self.headers)
         return r.json()    
-    
+
+    def getAccountTransactions(self, d_getAccountTransactions):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/transactions'
+        if not(d_getAccountTransactions.get('from') is None or d_getAccountTransactions['from'] is None):
+            url += '?from=' + d_getAccountTransactions['from']
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()
+
+    def getAccountTransactionDetails(self, d_getAccountTransactionDetails):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/transactions'
+        if not(d_getAccountTransactionDetails.get('transactionID') is None or d_getAccountTransactionDetails['transactionID'] is None):
+            url += '/' + d_getAccountTransactionDetails['transactionID']
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()
+
+    def getAccountTransactionRange(self, d_getAccountTransactionRange):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/transactions/idrange'
+        if not(d_getAccountTransactionRange.get('from') is None or d_getAccountTransactionRange['from'] is None):
+            url += '?from=' + d_getAccountTransactionRange['from'] + \
+                '&to=' + d_getAccountTransactionRange['to'] 
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()
+
+    def getAccountTransactionSince(self, d_getAccountTransactionSince):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/transactions'
+        if not(d_getAccountTransactionSince.get('id') is None or d_getAccountTransactionSince['id'] is None):
+            url += '/sinceid?id=' + d_getAccountTransactionSince['id'] 
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()
+
+    def getAccountLatestCandles(self, d_getAccountLatestCandles):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/candles/latest'
+        if not(d_getAccountLatestCandles.get('candleSpecifications') is None or d_getAccountLatestCandles['candleSpecifications'] is None):
+            url += '?candleSpecifications=' + d_getAccountLatestCandles['candleSpecifications'] 
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()
+
+    def getAccountPricing(self, d_getAccountPricing):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/pricing'
+        if not(d_getAccountPricing.get('instrument') is None or d_getAccountPricing['instrument'] is None):
+            url += '?instruments=' + d_getAccountPricing['instrument'] 
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()
+
+    def getAccountInstrumentCandles(self, d_getAccountInstrumentCandles):
+        method = 'GET'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/instruments/' + d_getAccountInstrumentCandles['instrument'] + '/candles'
+        if not(d_getAccountInstrumentCandles.get('price') is None or d_getAccountInstrumentCandles['price'] is None):
+            url += '?price=' + d_getAccountInstrumentCandles['price'] + \
+                '&granularity=' + d_getAccountInstrumentCandles['granularity'] + \
+                '&count=' + d_getAccountInstrumentCandles['count']
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers)
+        return r.json()    

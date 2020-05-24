@@ -83,11 +83,50 @@ d_getAccountTradeDetails = {'tradeSpecifier' : None}
 #print(x.getAccountTradeDetails(d_getAccountTradeDetails))
 
 ## getAccountPositions
-print(x.getAccountPositions())
+#print(x.getAccountPositions())
 
 ## getAccountOpenPositions
-print(x.getAccountOpenPositions())
+#print(x.getAccountOpenPositions())
 
 ## getAccountPositionsInstrument
 d_getAccountPositionsInstrument = {'instrument' : 'USD_JPY'}
-print(x.getAccountPositionsInstrument(d_getAccountPositionsInstrument))
+#print(x.getAccountPositionsInstrument(d_getAccountPositionsInstrument))
+
+## getAccountTransactions
+d_getAccountTransactions = {'from' : None}
+time = datetime(2020, 5, 21, 21, 0, 0, 0)
+time = time.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+d_getAccountTransactions['from'] = quote(time)
+#print(x.getAccountTransactions(d_getAccountTransactions))
+
+## getAccountTransactionDetails
+d_getAccountTransactionDetails = {'transactionID' : None}
+#print(x.getAccountTransactionDetails(d_getAccountTransactionDetails))
+
+## getAccountTransactionRange
+d_getAccountTransactionRange = {'from' : '42', 'to' : '42'}
+#print(x.getAccountTransactionRange(d_getAccountTransactionRange))
+
+## getAccountTransactionSince
+d_getAccountTransactionSince = {'id' : '42'}
+#print(x.getAccountTransactionSince(d_getAccountTransactionSince))
+
+## getAccountLatestCandles
+d_getAccountLatestCandles = {'candleSpecifications' : 'AUD_USD:M5:M'}
+#print(x.getAccountLatestCandles(d_getAccountLatestCandles))
+
+## getAccountPricing
+d_getAccountPricing = {'instrument' : 'AUD_USD'}
+#print(x.getAccountPricing(d_getAccountPricing))
+
+## getAccountInstrumentCandles
+d_getAccountInstrumentCandles = {'instrument' : 'AUD_USD', 'price' : 'M', 'granularity' : 'M5', 'count' : '2'}
+#print(x.getAccountInstrumentCandles(d_getAccountInstrumentCandles))
+
+
+## WHATS NEXT
+# mysql insert
+
+## BACKLOG
+# getAccountTransactionStream # streaming endpoint
+# getAccountPricingStream  # streaming endpoint
