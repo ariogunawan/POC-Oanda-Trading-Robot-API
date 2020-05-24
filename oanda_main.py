@@ -59,3 +59,25 @@ time = datetime(2020, 5, 21, 21, 0, 0, 0)
 time = time.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 d_getInstrumentPositionBook['time'] = quote(time)
 #print(x.getInstrumentPositionBook(d_getInstrumentPositionBook))
+
+## getAccountOrders
+d_getAccountOrders = {}
+#print(x.getAccountOrders(d_getAccountOrders))
+
+## getAccountPendingOrders
+#print(x.getAccountPendingOrders())
+
+## getAccountOrderDetails
+d_getAccountOrderDetails = {'orderSpecifier' : None}
+#print(x.getAccountOrderDetails(d_getAccountOrderDetails))
+
+## getAccountTrades
+d_getAccountTrades = {}
+print(x.getAccountTrades(d_getAccountTrades))
+
+## getAccountOpenTrades
+print(x.getAccountOpenTrades())
+
+## getAccountTradeDetails
+d_getAccountTradeDetails = {'tradeSpecifier' : None}
+print(x.getAccountTradeDetails(d_getAccountTradeDetails))
