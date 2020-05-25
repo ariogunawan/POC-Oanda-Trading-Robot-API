@@ -6,12 +6,28 @@ Created on Sat May 23 15:43:34 2020
 """
 import oanda_login as ol
 import requests
+import pytz, datetime
+
+class kucingTukang():
+    def __init__(self):
+        self.timezone = 'Australia/Sydney'
+        self.oanda_time_format = '%Y-%m-%dT%H:%M:%S.000000000Z'
+        self.mysql_time_format = '%Y-%m-%d %H:%M:%S'
+        
+    def strToTime(self, time, utc):
+        local = pytz.timezone (self.timezone)
+        naive = datetime.datetime.strptime (time, self.oanda_time_format)
+        local_dt = local.localize(naive, is_dst=None)
+        utc_dt = local_dt.astimezone(pytz.utc)
+        localtime = local_dt.strftime (self.mysql_time_format)
+        utctime = utc_dt.strftime (self.mysql_time_format)
+        return utctime if not(utc is None) and utc.upper() == 'UTC' else localtime    
 
 class kucingJoget():
     def __init__(self):
         self.session = requests.Session()
-        self.headers = ol.headers
-
+        self.headers = ol.headers        
+        
     def getAccountId(self):
         method = 'GET'
         url = '/v3/accounts'

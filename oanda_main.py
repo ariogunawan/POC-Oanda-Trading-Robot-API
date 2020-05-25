@@ -4,7 +4,7 @@ Created on Sat May 23 16:26:26 2020
 
 @author: Ario Gunawan
 """
-from oanda_class import kucingJoget
+from oanda_class import kucingJoget, kucingTukang
 from datetime import datetime, timedelta
 from urllib.parse import quote, unquote
 
@@ -37,7 +37,7 @@ time = datetime(2020, 5, 21, 21, 5, 0, 0)
 time = datetime.now() - timedelta(days=4)
 time = time.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 d_getInstrumentCandles['from'] = quote(time)
-#print(x.getInstrumentCandles(d_getInstrumentCandles))
+print(x.getInstrumentCandles(d_getInstrumentCandles))
 
 ## getInstrumentOrderBook
 d_getInstrumentOrderBook = {
@@ -121,7 +121,7 @@ d_getAccountPricing = {'instrument' : 'AUD_USD'}
 
 ## getAccountInstrumentCandles
 d_getAccountInstrumentCandles = {'instrument' : 'AUD_USD', 'price' : 'M', 'granularity' : 'M5', 'count' : '2'}
-#print(x.getAccountInstrumentCandles(d_getAccountInstrumentCandles))
+print(x.getAccountInstrumentCandles(d_getAccountInstrumentCandles))
 
 
 ## WHATS NEXT
