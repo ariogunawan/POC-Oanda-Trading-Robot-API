@@ -16,3 +16,10 @@ headers = {
 }
 
 headers['Authorization'] = 'Bearer' + ' ' + login.get('api_key')
+
+mysql_login = {
+    'user' : 'root',
+    'password' : 'kucingjoget',
+    'host' : 'localhost',
+    'database' : 'oanda'
+    }

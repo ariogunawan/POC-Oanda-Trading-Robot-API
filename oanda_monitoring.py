@@ -4,18 +4,18 @@ Created on Sat May 23 16:26:26 2020
 
 @author: Ario Gunawan
 """
-from oanda_class import kucingJoget, kucingTukang
+from oanda_class import kucingJoget, kucingTukang, kucingBuku
 from datetime import datetime, timedelta
 from urllib.parse import quote, unquote
 import mysql.connector as cn
 
 x = kucingJoget()
-y = kucingTukang()
+z = kucingBuku()
 
 # getInstrumentCandles
 d_getInstrumentCandles = {
     'instrument' : 'AUD_USD',
-    'count' : '2',
+    'count' : '10',
     'price' : 'M',
     'granularity' : 'M5',
     'from' : None
@@ -26,24 +26,7 @@ d_getInstrumentCandles = {
 #d_getInstrumentCandles['from'] = quote(time)
 res = (x.getInstrumentCandles(d_getInstrumentCandles))
 
-sql = "insert into price (instrument, granularity, price_type, price_utctime, price_localtime, complete, volume, open, high, low, close) " 
-sql += "select '" + res['instrument'] + "', '" + res['granularity'] + "', '" + "mid" + "', '" + y.strToTime(res['candles'][0]['time'], 'UTC') + "', '" 
-sql += y.strToTime(res['candles'][0]['time'], None) + "', '" + str(res['candles'][0]['complete']) + "', " + str(res['candles'][0]['volume']) + ", " 
-sql += str(res['candles'][0]['mid']['o']) + ", " + str(res['candles'][0]['mid']['h']) + ", " + str(res['candles'][0]['mid']['l']) + ", " + str(res['candles'][0]['mid']['c'])
+# loadPrice - check the latest price time for the instrument
+# then call res FROM latest price time
 
-print(sql)
-
-cnx = cn.connect(user='root', password='kucingjoget',
-                              host='localhost',
-                              database='oanda')
-
-mycursor = cnx.cursor()
-# INSERT ROW
-mycursor.execute(sql)
-cnx.commit()
-print(mycursor.rowcount, " records inserted")
-
-# SELECT ROW
-#mycursor.execute("select * from price")
-#res = mycursor.fetchall()
-cnx.close()
+z.insertPrice(res)

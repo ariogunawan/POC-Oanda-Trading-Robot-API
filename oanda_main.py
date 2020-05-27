@@ -27,16 +27,16 @@ d_getAccountChange = {
 
 ## getInstrumentCandles
 d_getInstrumentCandles = {
-    'instrument' : 'USD_JPY',
-    'count' : '2',
+    'instrument' : 'AUD_USD',
+    'count' : '5',
     'price' : 'M',
     'granularity' : 'M5',
     'from' : None
     }
-time = datetime(2020, 5, 21, 21, 5, 0, 0)
-time = datetime.now() - timedelta(days=4)
-time = time.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-d_getInstrumentCandles['from'] = quote(time)
+#time = datetime(2020, 5, 21, 21, 5, 0, 0)
+#time = datetime.now() - timedelta(days=4)
+#time = time.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+#d_getInstrumentCandles['from'] = quote(time)
 print(x.getInstrumentCandles(d_getInstrumentCandles))
 
 ## getInstrumentOrderBook

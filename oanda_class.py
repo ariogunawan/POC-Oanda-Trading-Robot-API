@@ -7,20 +7,63 @@ Created on Sat May 23 15:43:34 2020
 import oanda_login as ol
 import requests
 import pytz, datetime
+import mysql.connector as cn
+
+class kucingBuku():
+    def __init__(self):
+        pass
+    
+    def insertPrice(self, res):
+        try:
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor()
+
+            query = "insert into price (instrument, granularity, price_type, price_utctime, price_time, complete, volume, open, high, low, close) " \
+                    "select %(instrument)s, %(granularity)s, %(price_type)s, %(time_utc)s, %(time)s, %(complete)s, %(volume)s, %(o)s, %(h)s, %(l)s, %(c)s "\
+                    "where not exists (select 1 from price p where p.instrument = %(instrument)s and p.granularity = %(granularity)s and p.price_type = %(price_type)s and p.price_time = %(time)s and p.complete = %(complete)s and p.volume = %(volume)s)"
+            
+            l_candles = []
+            for candle in res['candles']:
+                if candle['complete'] == True:
+                    data = {}
+                    data['instrument'] = res.get('instrument')
+                    data['granularity'] = res.get('granularity')
+                    data['price_type'] = 'mid'
+                    data['time_utc'] = kucingTukang.strToTime(candle['time'], 'UTC')
+                    data['time'] = kucingTukang.strToTime(candle['time'], None)
+                    data['complete'] = candle['complete']
+                    data['volume'] = candle['volume']
+                    data.update(candle[data['price_type']])
+                    l_candles.append(data)
+                
+            for l_candle in l_candles:
+                mycursor.execute(query, l_candle)
+                
+            conn.commit()
+            print('Records inserted')
+        
+        #except:
+            #print('Something wrong')
+            #print('res   = ', res)
+            #print('Query = ', query)
+            #print('Data  = ', l_candles)
+            
+        finally:
+            mycursor.close()
+            conn.close()        
 
 class kucingTukang():
-    def __init__(self):
-        self.timezone = 'Australia/Sydney'
-        self.oanda_time_format = '%Y-%m-%dT%H:%M:%S.000000000Z'
-        self.mysql_time_format = '%Y-%m-%d %H:%M:%S'
-        
-    def strToTime(self, time, utc):
-        local = pytz.timezone (self.timezone)
-        naive = datetime.datetime.strptime (time, self.oanda_time_format)
+    @staticmethod
+    def strToTime(time, utc):
+        timezone = 'Australia/Sydney'
+        oanda_time_format = '%Y-%m-%dT%H:%M:%S.000000000Z'
+        mysql_time_format = '%Y-%m-%d %H:%M:%S'
+        local = pytz.timezone (timezone)
+        naive = datetime.datetime.strptime (time, oanda_time_format)
         local_dt = local.localize(naive, is_dst=None)
         utc_dt = local_dt.astimezone(pytz.utc)
-        localtime = local_dt.strftime (self.mysql_time_format)
-        utctime = utc_dt.strftime (self.mysql_time_format)
+        localtime = local_dt.strftime (mysql_time_format)
+        utctime = utc_dt.strftime (mysql_time_format)
         return utctime if not(utc is None) and utc.upper() == 'UTC' else localtime    
 
 class kucingJoget():
