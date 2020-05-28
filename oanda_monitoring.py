@@ -13,20 +13,13 @@ x = kucingJoget()
 z = kucingBuku()
 
 # getInstrumentCandles
-d_getInstrumentCandles = {
-    'instrument' : 'AUD_USD',
-    'count' : '10',
-    'price' : 'M',
-    'granularity' : 'M5',
-    'from' : None
-    }
-#time = datetime(2020, 5, 21, 21, 5, 0, 0)
-#time = datetime.now() - timedelta(days=4)
-#time = time.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-#d_getInstrumentCandles['from'] = quote(time)
+# Load the latest price_utctime, feed the result into a dictionary
+d_getInstrumentCandles = z.selectPrice()
+
+# Get the latest candles SINCE the latest price_utctime in the database
 res = (x.getInstrumentCandles(d_getInstrumentCandles))
 
-# loadPrice - check the latest price time for the instrument
-# then call res FROM latest price time
-
+# Insert the latest candles SINCE the latest price_utctime in the database
 z.insertPrice(res)
+
+# perform calculation on SMA, Stochastic

@@ -9,48 +9,6 @@ import requests
 import pytz, datetime
 import mysql.connector as cn
 
-class kucingBuku():
-    def __init__(self):
-        pass
-    
-    def insertPrice(self, res):
-        try:
-            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
-            mycursor = conn.cursor()
-
-            query = "insert into price (instrument, granularity, price_type, price_utctime, price_time, complete, volume, open, high, low, close) " \
-                    "select %(instrument)s, %(granularity)s, %(price_type)s, %(time_utc)s, %(time)s, %(complete)s, %(volume)s, %(o)s, %(h)s, %(l)s, %(c)s "\
-                    "where not exists (select 1 from price p where p.instrument = %(instrument)s and p.granularity = %(granularity)s and p.price_type = %(price_type)s and p.price_time = %(time)s and p.complete = %(complete)s and p.volume = %(volume)s)"
-            
-            l_candles = []
-            for candle in res['candles']:
-                if candle['complete'] == True:
-                    data = {}
-                    data['instrument'] = res.get('instrument')
-                    data['granularity'] = res.get('granularity')
-                    data['price_type'] = 'mid'
-                    data['time_utc'] = kucingTukang.strToTime(candle['time'], 'UTC')
-                    data['time'] = kucingTukang.strToTime(candle['time'], None)
-                    data['complete'] = candle['complete']
-                    data['volume'] = candle['volume']
-                    data.update(candle[data['price_type']])
-                    l_candles.append(data)
-                
-            for l_candle in l_candles:
-                mycursor.execute(query, l_candle)
-                
-            conn.commit()
-            print('Records inserted')
-        
-        #except:
-            #print('Something wrong')
-            #print('res   = ', res)
-            #print('Query = ', query)
-            #print('Data  = ', l_candles)
-            
-        finally:
-            mycursor.close()
-            conn.close()        
 
 class kucingTukang():
     @staticmethod
@@ -65,6 +23,7 @@ class kucingTukang():
         localtime = local_dt.strftime (mysql_time_format)
         utctime = utc_dt.strftime (mysql_time_format)
         return utctime if not(utc is None) and utc.upper() == 'UTC' else localtime    
+
 
 class kucingJoget():
     def __init__(self):
@@ -119,13 +78,13 @@ class kucingJoget():
     def getInstrumentCandles(self, d_getInstrumentCandles):
         method = 'GET'
         url = '/v3/instruments/' + d_getInstrumentCandles['instrument'] + \
-            '/candles?count=' + d_getInstrumentCandles['count'] + \
-            '&price=' + d_getInstrumentCandles['price'] + \
-            '&granularity=' + d_getInstrumentCandles['granularity']
-        if not(d_getInstrumentCandles.get('from') is None or d_getInstrumentCandles['from'] is None):
-            url += '&from=' + d_getInstrumentCandles['from']
+            '/candles?&granularity=' + d_getInstrumentCandles['granularity'] + \
+            '&price=' + d_getInstrumentCandles['price_type']
+        if not(d_getInstrumentCandles.get('price_from') is None or d_getInstrumentCandles['price_from'] is None):
+            url += '&from=' + d_getInstrumentCandles['price_from'].strftime("%Y-%m-%dT%H:%M:%S.000Z")
         endpoint_url = ol.login.get('endpoint_url')
         endpoint_url += url
+        print(endpoint_url)
         r = self.session.request(method, endpoint_url, headers=self.headers)
         return r.json()
 
@@ -321,3 +280,64 @@ class kucingJoget():
         endpoint_url += url
         r = self.session.request(method, endpoint_url, headers=self.headers)
         return r.json()    
+    
+
+class kucingBuku():
+    def __init__(self):
+        pass
+    
+    def insertPrice(self, res):
+        try:
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor(buffered=True)
+
+            query = "insert into price (instrument, granularity, price_type, price_utctime, price_time, complete, volume, open, high, low, close) " \
+                    "select %(instrument)s, %(granularity)s, %(price_type)s, %(time_utc)s, %(time)s, %(complete)s, %(volume)s, %(o)s, %(h)s, %(l)s, %(c)s "\
+                    "where not exists (select 1 from price p where p.instrument = %(instrument)s and p.granularity = %(granularity)s and p.price_type = %(price_type)s and p.price_time = %(time)s and p.complete = %(complete)s and p.volume = %(volume)s)"
+            
+            l_candles = []
+            for candle in res['candles']:
+                if candle['complete'] == True:
+                    data = {}
+                    data['instrument'] = res.get('instrument')
+                    data['granularity'] = res.get('granularity')
+                    data['price_type'] = 'mid'
+                    data['time_utc'] = kucingTukang.strToTime(candle['time'], 'UTC')
+                    data['time'] = kucingTukang.strToTime(candle['time'], None)
+                    data['complete'] = candle['complete']
+                    data['volume'] = candle['volume']
+                    data.update(candle[data['price_type']])
+                    l_candles.append(data)
+                
+            for l_candle in l_candles:
+                mycursor.execute(query, l_candle)
+                
+            conn.commit()
+            print('End of Insert Function')
+            
+        finally:
+            mycursor.close()
+            conn.close()            
+            
+    def selectPrice(self):
+        try:
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor(buffered=True, dictionary=True)
+
+
+            query = "SELECT instrument, granularity, case price_type when 'mid' then 'M' when 'bid' then 'B' else 'A' end as price_type, max(price_utctime) AS price_from " \
+                    "FROM price "\
+                    "GROUP BY instrument, granularity, price_type"
+            
+            mycursor.execute(query)
+            row = mycursor.fetchone()
+            
+            return row
+            
+        except:
+            print('Something wrong')
+            print('Query = ', query)
+            
+        finally:
+            mycursor.close()
+            conn.close()            
