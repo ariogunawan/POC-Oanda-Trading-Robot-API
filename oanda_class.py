@@ -285,6 +285,63 @@ class kucingJoget():
 class kucingBuku():
     def __init__(self):
         pass
+
+    def updateStatus(self, process_status, comments):
+        try:
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor(buffered=True)
+
+            query = "update system_parameters " \
+                    "set process_status = %(process_status)s, comments = %(comments)s"
+            d_system_parameters = {}
+            d_system_parameters['process_status'] = process_status
+            d_system_parameters['comments'] = comments
+            mycursor.execute(query, d_system_parameters)
+            conn.commit()
+            print('Updated Status')
+            
+        finally:
+            mycursor.close()
+            conn.close()     
+
+    def raiseError(self, error_message):
+        try:
+            error_message = (error_message,)
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor(buffered=True)
+
+            query = "insert into error_log (error_log_message) " \
+                    "values (%s)"
+
+            mycursor.execute(query, error_message)
+            conn.commit()
+            print('Inserted an error message')
+            
+        finally:
+            mycursor.close()
+            conn.close()            
+
+    def selectStatus(self):
+        try:
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor(buffered=True, dictionary=True)
+
+
+            query = "SELECT coalesce(process_status, 'E') as process_status, comments, last_modified " \
+                    "FROM system_parameters "
+            
+            mycursor.execute(query)
+            row = mycursor.fetchone()
+            
+            return row
+            
+        except:
+            print('Something wrong')
+            print('Query = ', query)
+            
+        finally:
+            mycursor.close()
+            conn.close()            
     
     def insertPrice(self, res):
         try:
