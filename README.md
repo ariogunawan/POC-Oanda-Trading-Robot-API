@@ -4,12 +4,14 @@ Oanda Python
 # to do
 ## Create a monitoring, which consist of:
 a.
-- [ ] Check if there's a running flag, if yes - exit send error message, else set running flag as true
+- [x] Check if there's a running flag, if yes - exit
 
 b. Price update
 - [x] Pulled the latest recorded price from the database as X
 - [x] Pull the Oanda price from X to today as Y
-~~- [ ] Check if we are approaching weekends and when to start a new weekday, if true then exit~~
+
+~~Check if we are approaching weekends and when to start a new weekday, if true then exit~~
+
 - [ ] If false - then Insert Y into the database where not exists in X
 
 c.
@@ -28,4 +30,4 @@ g.
 - [ ] If all 3 checkers = Passed, then open a position
 
 h.
-- [ ] Update running flag to Completed
+- [x] Update running flag to Completed
