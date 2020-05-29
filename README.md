@@ -7,9 +7,9 @@ a. [ ] Check if there's a running flag, if yes - exit send error message, else s
 
 b. Price update
 
-[x] Pulled the latest recorded price from the database as X
+- [x] Pulled the latest recorded price from the database as X
 
-[x] Pull the Oanda price from X to today as Y
+- [x] Pull the Oanda price from X to today as Y
 
 ~~[ ] Check if we are approaching weekends and when to start a new weekday, if true then exit~~
 
@@ -18,7 +18,7 @@ b. Price update
 - [x] Finish my changes
 - [ ] Finish my changes
 
-c. [ ] Calculating the SMA, Stochastic in the database, get the database as relevant as possible
+c.- [ ] Calculating the SMA, Stochastic in the database, get the database as relevant as possible
 
 d. [ ] Check the balance, check if we have enough money to enter
 
