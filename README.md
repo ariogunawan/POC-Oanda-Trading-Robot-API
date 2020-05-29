@@ -15,6 +15,8 @@ b. Price update
 
 [ ] If false - then Insert Y into the database where not exists in X
 
+- [x] Finish my changes
+- [ ] Finish my changes
 
 c. [ ] Calculating the SMA, Stochastic in the database, get the database as relevant as possible
 
