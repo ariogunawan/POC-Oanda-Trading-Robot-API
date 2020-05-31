@@ -8,6 +8,9 @@ import oanda_login as ol
 import requests
 import pytz, datetime
 import mysql.connector as cn
+from sqlalchemy import create_engine
+import pandas as pd
+from talib.abstract import SMA
 
 
 class kucingTukang():
@@ -291,14 +294,16 @@ class kucingBuku():
             conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
             mycursor = conn.cursor(buffered=True)
 
-            query = "update system_parameters " \
-                    "set process_status = %(process_status)s, comments = %(comments)s"
+            query = """
+            update system_parameters
+            set process_status = %(process_status)s, comments = %(comments)s
+            """
             d_system_parameters = {}
             d_system_parameters['process_status'] = process_status
             d_system_parameters['comments'] = comments
             mycursor.execute(query, d_system_parameters)
             conn.commit()
-            print('Updated Status')
+            print('System Parameters - Status updated')
             
         finally:
             mycursor.close()
@@ -310,12 +315,14 @@ class kucingBuku():
             conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
             mycursor = conn.cursor(buffered=True)
 
-            query = "insert into error_log (error_log_message) " \
-                    "values (%s)"
+            query = """
+            insert into error_log (error_log_message)
+            values (%s)
+            """
 
             mycursor.execute(query, error_message)
             conn.commit()
-            print('Inserted an error message')
+            print('Error Log - Inserted an error message')
             
         finally:
             mycursor.close()
@@ -327,8 +334,10 @@ class kucingBuku():
             mycursor = conn.cursor(buffered=True, dictionary=True)
 
 
-            query = "SELECT coalesce(process_status, 'E') as process_status, comments, last_modified " \
-                    "FROM system_parameters "
+            query = """
+            SELECT coalesce(process_status, 'E') as process_status, comments, last_modified
+            FROM system_parameters
+            """
             
             mycursor.execute(query)
             row = mycursor.fetchone()
@@ -336,7 +345,7 @@ class kucingBuku():
             return row
             
         except:
-            print('Something wrong')
+            print('Something wrong in selectStatus')
             print('Query = ', query)
             
         finally:
@@ -348,9 +357,11 @@ class kucingBuku():
             conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
             mycursor = conn.cursor(buffered=True)
 
-            query = "insert into price (instrument, granularity, price_type, price_utctime, price_time, complete, volume, open, high, low, close) " \
-                    "select %(instrument)s, %(granularity)s, %(price_type)s, %(time_utc)s, %(time)s, %(complete)s, %(volume)s, %(o)s, %(h)s, %(l)s, %(c)s "\
-                    "where not exists (select 1 from price p where p.instrument = %(instrument)s and p.granularity = %(granularity)s and p.price_type = %(price_type)s and p.price_time = %(time)s and p.complete = %(complete)s and p.volume = %(volume)s)"
+            query = """
+            insert into price (instrument, granularity, price_type, price_utctime, price_time, complete, volume, open, high, low, close)
+            select %(instrument)s, %(granularity)s, %(price_type)s, %(time_utc)s, %(time)s, %(complete)s, %(volume)s, %(o)s, %(h)s, %(l)s, %(c)s
+            where not exists (select 1 from price p where p.instrument = %(instrument)s and p.granularity = %(granularity)s and p.price_type = %(price_type)s and p.price_time = %(time)s and p.complete = %(complete)s and p.volume = %(volume)s)
+            """
             
             l_candles = []
             for candle in res['candles']:
@@ -365,12 +376,20 @@ class kucingBuku():
                     data['volume'] = candle['volume']
                     data.update(candle[data['price_type']])
                     l_candles.append(data)
-                
+            i = 0    
             for l_candle in l_candles:
                 mycursor.execute(query, l_candle)
+                i = i + mycursor.rowcount
                 
             conn.commit()
-            print('End of Insert Function')
+            if i > 0:
+                print('Price table - Data inserted')
+            else:
+                print('Price table - no added data')
+
+        except:
+            print('Something wrong with insertPrice')
+            print('Query = ', query)
             
         finally:
             mycursor.close()
@@ -382,9 +401,17 @@ class kucingBuku():
             mycursor = conn.cursor(buffered=True, dictionary=True)
 
 
-            query = "SELECT instrument, granularity, case price_type when 'mid' then 'M' when 'bid' then 'B' else 'A' end as price_type, max(price_utctime) AS price_from " \
-                    "FROM price "\
-                    "GROUP BY instrument, granularity, price_type"
+            query = """
+            WITH result AS (
+            SELECT p.instrument, p.granularity, case p.price_type when 'mid' then 'M' when 'bid' then 'B' else 'A' end as price_type, max(p.price_utctime) AS price_from
+            FROM price p
+            GROUP BY p.instrument, p.granularity, p.price_type
+            )
+            SELECT price_id, r.* 
+            FROM result r
+            JOIN price p ON p.instrument = r.instrument AND p.granularity = r.granularity AND p.price_type = case r.price_type when 'M' then 'mid' when 'B' then 'bid' ELSE 'ask' END
+            WHERE r.price_from = p.price_utctime
+            """
             
             mycursor.execute(query)
             row = mycursor.fetchone()
@@ -392,9 +419,54 @@ class kucingBuku():
             return row
             
         except:
-            print('Something wrong')
+            print('Something wrong with selectPrice')
             print('Query = ', query)
             
         finally:
             mycursor.close()
             conn.close()            
+            
+    def updateIndicator(self, res):
+        try:
+            cnx = create_engine('mysql+pymysql://' +ol.mysql_login.get('user')+ ':' +ol.mysql_login.get('password')+ '@' +ol.mysql_login.get('host')+ '/' + ol.mysql_login.get('database'))    
+            
+            query = """
+            SELECT price_id, price_utctime as price_from, open, high, low, close 
+            from price 
+            where price_utctime > %(price_from)s
+            and instrument = %(instrument)s
+            and granularity = %(granularity)s
+            and price_type = case %(price_type)s when 'M' then 'mid' when 'B' then 'bid' else 'ask' end 
+            order by price_utctime asc
+            """
+
+            df = pd.read_sql(query, cnx, params=res, index_col=['price_from'])
+            #df.set_index('price_from')
+            if not(df.dropna().empty):
+                # add SMA_5
+                df['sma_5'] = SMA(df, timeperiod=5, price='open')
+                
+                query = """
+                truncate table temptable_indicator
+                """
+                cnx.execute(query)
+                
+                df.to_sql(name='temptable_indicator', con=cnx, if_exists='append')
+                query = """
+                update indicator i
+                join temptable_indicator t on t.price_id = i.price_id_fk
+                SET i.sma_5 = ROUND(t.sma_5, 8)
+                where t.sma_5 is not null
+                """
+                cnx.execute(query)
+                print('Indicator table is updated')
+            else:
+                print('Data Frame is empty - no data')
+        except:
+            print('Something wrong')
+            print('Query = ', query)
+            print('Dict = ', res)
+            print('DF = ', df)
+           
+        finally:
+            cnx.dispose()
