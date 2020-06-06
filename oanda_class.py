@@ -10,7 +10,7 @@ import pytz, datetime
 import mysql.connector as cn
 from sqlalchemy import create_engine
 import pandas as pd
-from talib.abstract import SMA
+from talib.abstract import SMA, CDL3WHITESOLDIERS
 
 
 class kucingTukang():
@@ -87,7 +87,6 @@ class kucingJoget():
             url += '&from=' + d_getInstrumentCandles['price_from'].strftime("%Y-%m-%dT%H:%M:%S.000Z")
         endpoint_url = ol.login.get('endpoint_url')
         endpoint_url += url
-        print(endpoint_url)
         r = self.session.request(method, endpoint_url, headers=self.headers)
         return r.json()
 
@@ -289,25 +288,58 @@ class kucingBuku():
     def __init__(self):
         pass
 
-    def updateStatus(self, process_status, comments):
+
+    def selectAction(self, action_name):
+        try:
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor(buffered=True, dictionary=True)
+
+
+            query = """
+            SELECT action_value, action_message, action_datatype, action_datetime
+            FROM action
+            where action_name = %(action_name)s
+            """
+            
+            d_action = {}
+            d_action['action_name'] = action_name
+            mycursor.execute(query, d_action)
+            row = mycursor.fetchone()
+            
+            return row
+            
+        except:
+            print('Something wrong in selectStatus')
+            print('Query = ', query)
+            
+        finally:
+            mycursor.close()
+            conn.close()            
+
+
+    def updateAction(self, action_name, action_value, action_message):
         try:
             conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
             mycursor = conn.cursor(buffered=True)
 
             query = """
-            update system_parameters
-            set process_status = %(process_status)s, comments = %(comments)s
+            update action
+            set action_value = %(action_value)s, action_message = %(action_message)s
+            where action_name = %(action_name)s
+            and coalesce(action_value, '') <> %(action_value)s
             """
-            d_system_parameters = {}
-            d_system_parameters['process_status'] = process_status
-            d_system_parameters['comments'] = comments
-            mycursor.execute(query, d_system_parameters)
+            d_action = {}
+            d_action['action_name'] = action_name
+            d_action['action_value'] = action_value
+            d_action['action_message'] = action_message
+            mycursor.execute(query, d_action)
             conn.commit()
-            print('System Parameters - Status updated')
+            print('Action List - ', d_action['action_name'], ' = ', d_action['action_value'])
             
         finally:
             mycursor.close()
             conn.close()     
+
 
     def raiseError(self, error_message):
         try:
@@ -328,29 +360,6 @@ class kucingBuku():
             mycursor.close()
             conn.close()            
 
-    def selectStatus(self):
-        try:
-            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
-            mycursor = conn.cursor(buffered=True, dictionary=True)
-
-
-            query = """
-            SELECT coalesce(process_status, 'E') as process_status, comments, last_modified
-            FROM system_parameters
-            """
-            
-            mycursor.execute(query)
-            row = mycursor.fetchone()
-            
-            return row
-            
-        except:
-            print('Something wrong in selectStatus')
-            print('Query = ', query)
-            
-        finally:
-            mycursor.close()
-            conn.close()            
     
     def insertPrice(self, res):
         try:
@@ -385,7 +394,7 @@ class kucingBuku():
             if i > 0:
                 print('Price table - Data inserted')
             else:
-                print('Price table - no added data')
+                print('Price table - Nothing was updated')
 
         except:
             print('Something wrong with insertPrice')
@@ -426,25 +435,51 @@ class kucingBuku():
             mycursor.close()
             conn.close()            
             
-    def updateIndicator(self, res):
+    def updateIndicator(self, res, scope):
         try:
             cnx = create_engine('mysql+pymysql://' +ol.mysql_login.get('user')+ ':' +ol.mysql_login.get('password')+ '@' +ol.mysql_login.get('host')+ '/' + ol.mysql_login.get('database'))    
             
-            query = """
-            SELECT price_id, price_utctime as price_from, open, high, low, close 
-            from price 
-            where price_utctime > %(price_from)s
-            and instrument = %(instrument)s
-            and granularity = %(granularity)s
-            and price_type = case %(price_type)s when 'M' then 'mid' when 'B' then 'bid' else 'ask' end 
-            order by price_utctime asc
-            """
+            if scope == 'all':
+                query = """
+                WITH missing_indicator AS (
+                SELECT MIN(p.price_utctime) AS min_price_utctime
+                from price p
+                JOIN indicator i ON i.price_id_fk = p.price_id
+                WHERE i.sma_50 IS NULL OR i.p_3whitesol IS NULL),
+                result AS (
+                SELECT p.price_id, p.price_utctime as price_from, p.open, p.high, p.low, p.close 
+                from price p
+                WHERE p.price_utctime >= (SELECT min_price_utctime FROM missing_indicator)
+                order by p.price_utctime asc
+                )
+                SELECT r.* 
+                FROM result r
+                JOIN price p on p.price_id = r.price_id
+                WHERE p.instrument = %(instrument)s
+                and p.granularity = %(granularity)s
+                and p.price_type = case %(price_type)s when 'M' then 'mid' when 'B' then 'bid' else 'ask' end                 
+                ORDER BY r.price_from asc
+                """            
+            else:
+                query = """
+                SELECT price_id, price_utctime as price_from, open, high, low, close 
+                from price 
+                where price_utctime > %(price_from)s
+                and instrument = %(instrument)s
+                and granularity = %(granularity)s
+                and price_type = case %(price_type)s when 'M' then 'mid' when 'B' then 'bid' else 'ask' end 
+                order by price_utctime asc
+                """
 
             df = pd.read_sql(query, cnx, params=res, index_col=['price_from'])
             #df.set_index('price_from')
             if not(df.dropna().empty):
-                # add SMA_5
-                df['sma_5'] = SMA(df, timeperiod=5, price='open')
+                # add SMA_50
+                df['sma_50'] = SMA(df, timeperiod=5, price='open')
+                # add Three White Soldier
+                df['p_3whitesol'] = CDL3WHITESOLDIERS(df['open'], df['high'], df['low'], df['close'])
+                # round them to 8 decimals
+                df = df.round({'sma_50': 8})                
                 
                 query = """
                 truncate table temptable_indicator
@@ -455,15 +490,16 @@ class kucingBuku():
                 query = """
                 update indicator i
                 join temptable_indicator t on t.price_id = i.price_id_fk
-                SET i.sma_5 = ROUND(t.sma_5, 8)
-                where t.sma_5 is not null
+                SET i.sma_50 = ROUND(t.sma_50, 8),
+                    i.p_3whitesol = t.p_3whitesol
                 """
+                # where (t.sma_50 is not null or t.p_3whitesol is not null)
                 cnx.execute(query)
                 print('Indicator table is updated')
             else:
                 print('Data Frame is empty - no data')
         except:
-            print('Something wrong')
+            print('Something wrong with updateIndicator')
             print('Query = ', query)
             print('Dict = ', res)
             print('DF = ', df)

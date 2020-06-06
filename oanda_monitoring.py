@@ -10,32 +10,34 @@ x = kucingJoget()
 z = kucingBuku()
 
 # Check if there's a current batch running
-d_system_parameters = z.selectStatus()
-if d_system_parameters['process_status'] == 'E' or d_system_parameters['process_status'] == 'R' or d_system_parameters['process_status'] == 'S' :
+d_batch_status = z.selectAction('batch status')
+if d_batch_status['action_value'] == 'R' or d_batch_status['action_value'] == 'E':
+    print('Batch is currently running or was halted!')
     exit()
-elif d_system_parameters['process_status'] == 'C':
+elif d_batch_status['action_value'] == 'C':
     # Set status as 'R' Running
-    z.updateStatus('R', 'Process is running')    
+    z.updateAction('batch status', 'R', None)    
     
-    # Load the latest price_utctime, feed the result into a dictionary
-    d_getInstrumentCandles = z.selectPrice()
-    print(d_getInstrumentCandles)
-    
-    # Get the latest candles SINCE the latest price_utctime in the database
-    res = (x.getInstrumentCandles(d_getInstrumentCandles))
-    
-    # Insert the latest candles SINCE the latest price_utctime in the database
-    z.insertPrice(res)
-    
-    # perform calculation on SMA, Stochastic
-    z.updateIndicator(d_getInstrumentCandles)
-    
+    d_batch_status = z.selectAction('update price')
+    if d_batch_status['action_value'] == 'Y':
+        # Load the latest price_utctime, feed the result into a dictionary
+        d_getInstrumentCandles = z.selectPrice()
+        
+        # Get the latest candles SINCE the latest price_utctime in the database
+        res = (x.getInstrumentCandles(d_getInstrumentCandles))
+        
+        # Insert the latest candles SINCE the latest price_utctime in the database
+        z.insertPrice(res)
+        
+        # perform calculation on SMA, Stochastic
+        z.updateIndicator(d_getInstrumentCandles, 'all')
+
     # Set status as 'C' Completed
-    z.updateStatus('C', 'Process completed')        
+    z.updateAction('batch status', 'C', None)
+    print('Batch run completed')
 else:
     # insert unknown error, set to E
-    error_message = 'Unknown error: system_parameters.process_status = ' + d_system_parameters['process_status']
-    z.raiseError(error_message)
-    z.updateStatus('E', error_message)
+    z.updateAction('batch status', 'E', 'Error in retrieving batch status')
+    print('Batch status retrieval error')
 
     
