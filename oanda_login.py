@@ -19,7 +19,7 @@ headers['Authorization'] = 'Bearer' + ' ' + login.get('api_key')
 
 mysql_login = {
     'user' : 'root',
-    'password' : 'kucingjoget',
-    'host' : 'localhost',
+    'password' : 'KucingjogetAbrakadabra123!',
+    'host' : '206.189.207.174',#'198.199.74.158',
     'database' : 'oanda'
     }

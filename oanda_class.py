@@ -10,22 +10,26 @@ import pytz, datetime
 import mysql.connector as cn
 from sqlalchemy import create_engine
 import pandas as pd
-from talib.abstract import SMA, CDL3WHITESOLDIERS
+from talib.abstract import SMA, CDLHARAMICROSS 
 
 
 class kucingTukang():
     @staticmethod
     def strToTime(time, utc):
-        timezone = 'Australia/Sydney'
+        local_timezone = pytz.timezone('Australia/Sydney')
         oanda_time_format = '%Y-%m-%dT%H:%M:%S.000000000Z'
         mysql_time_format = '%Y-%m-%d %H:%M:%S'
-        local = pytz.timezone (timezone)
-        naive = datetime.datetime.strptime (time, oanda_time_format)
-        local_dt = local.localize(naive, is_dst=None)
-        utc_dt = local_dt.astimezone(pytz.utc)
-        localtime = local_dt.strftime (mysql_time_format)
-        utctime = utc_dt.strftime (mysql_time_format)
-        return utctime if not(utc is None) and utc.upper() == 'UTC' else localtime    
+        # change raw string datetime to datetime object
+        raw_datetime = datetime.datetime.strptime(time, oanda_time_format)
+        utc_timezone = pytz.utc
+        # set the raw datetime as UTC timezone
+        utc_datetime = utc_timezone.localize(raw_datetime)
+        # set local datetime based on utc_datetime by changing its timezone
+        local_datetime = utc_datetime.astimezone(local_timezone)
+        # format both as mysql datetime format
+        utctime = utc_datetime.strftime(mysql_time_format)
+        localtime = local_datetime.strftime(mysql_time_format)
+        return utctime if not(utc is None) and utc.upper() == 'UTC' else localtime 
 
 
 class kucingJoget():
@@ -334,7 +338,17 @@ class kucingBuku():
             d_action['action_message'] = action_message
             mycursor.execute(query, d_action)
             conn.commit()
-            print('Action List - ', d_action['action_name'], ' = ', d_action['action_value'])
+            if d_action['action_name'] == 'batch status':
+                if d_action['action_value'] == 'R':
+                    print('****************** BATCH RUNNING ******************')
+                    print('Start time: ', datetime.datetime.now())
+                    print()
+                elif d_action['action_value'] == 'C':
+                    print()
+                    print('End time: ', datetime.datetime.now())
+                    print('****************** BATCH COMPLETED ******************')
+            else:                    
+                print('ACTION: [', d_action['action_name'], '] = ', d_action['action_value'])
             
         finally:
             mycursor.close()
@@ -360,49 +374,7 @@ class kucingBuku():
             mycursor.close()
             conn.close()            
 
-    
-    def insertPrice(self, res):
-        try:
-            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
-            mycursor = conn.cursor(buffered=True)
 
-            query = """
-            insert into price (instrument, granularity, price_type, price_utctime, price_time, complete, volume, open, high, low, close)
-            select %(instrument)s, %(granularity)s, %(price_type)s, %(time_utc)s, %(time)s, %(complete)s, %(volume)s, %(o)s, %(h)s, %(l)s, %(c)s
-            where not exists (select 1 from price p where p.instrument = %(instrument)s and p.granularity = %(granularity)s and p.price_type = %(price_type)s and p.price_time = %(time)s and p.complete = %(complete)s and p.volume = %(volume)s)
-            """
-            
-            l_candles = []
-            for candle in res['candles']:
-                if candle['complete'] == True:
-                    data = {}
-                    data['instrument'] = res.get('instrument')
-                    data['granularity'] = res.get('granularity')
-                    data['price_type'] = 'mid'
-                    data['time_utc'] = kucingTukang.strToTime(candle['time'], 'UTC')
-                    data['time'] = kucingTukang.strToTime(candle['time'], None)
-                    data['complete'] = candle['complete']
-                    data['volume'] = candle['volume']
-                    data.update(candle[data['price_type']])
-                    l_candles.append(data)
-            i = 0    
-            for l_candle in l_candles:
-                mycursor.execute(query, l_candle)
-                i = i + mycursor.rowcount
-                
-            conn.commit()
-            if i > 0:
-                print('Price table - Data inserted')
-            else:
-                print('Price table - Nothing was updated')
-
-        except:
-            print('Something wrong with insertPrice')
-            print('Query = ', query)
-            
-        finally:
-            mycursor.close()
-            conn.close()            
             
     def selectPrice(self):
         try:
@@ -433,19 +405,92 @@ class kucingBuku():
             
         finally:
             mycursor.close()
+            conn.close()          
+    
+    def insertPrice(self, res):
+        try:
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor(buffered=True, dictionary=True)
+
+            query = """
+            insert into price (instrument, granularity, price_type, price_utctime, price_time, complete, volume, open, high, low, close)
+            select %(instrument)s, %(granularity)s, %(price_type)s, %(time_utc)s, %(time)s, %(complete)s, %(volume)s, %(o)s, %(h)s, %(l)s, %(c)s
+            from dual
+            where not exists (select 1 from price p where p.instrument = %(instrument)s and p.granularity = %(granularity)s and p.price_type = %(price_type)s and p.price_time = %(time)s and p.complete = %(complete)s and p.volume = %(volume)s)
+            """
+
+            l_candles = []
+            for candle in res['candles']:
+                if candle['complete'] == True:
+                    data = {}
+                    data['instrument'] = res.get('instrument')
+                    data['granularity'] = res.get('granularity')
+                    data['price_type'] = 'mid'
+                    data['time_utc'] = kucingTukang.strToTime(candle['time'], 'UTC')
+                    data['time'] = kucingTukang.strToTime(candle['time'], None)
+                    data['complete'] = candle['complete']
+                    data['volume'] = candle['volume']
+                    data.update(candle[data['price_type']])
+                    l_candles.append(data)
+
+            i = 0    
+            for l_candle in l_candles:
+                mycursor.execute(query, l_candle)
+                i = i + mycursor.rowcount
+            
+            conn.commit()
+            if i > 0:
+                print('PRICE: Inserted')
+            else:
+                print('PRICE: Nothing to insert')
+
+        except:
+            print('Something wrong with insertPrice')
+            print('Query = ', query)
+            
+        finally:
+            mycursor.close()
             conn.close()            
+  
+    
+    def deletePrice(self, days):
+        try:
+            conn = cn.connect(user=ol.mysql_login.get('user'), password=ol.mysql_login.get('password'), host=ol.mysql_login.get('host'), database=ol.mysql_login.get('database'))
+            mycursor = conn.cursor(buffered=True)
+
+            query = """
+            DELETE 
+            FROM price
+            WHERE price_utctime < ADDDATE(CAST(NOW() AS DATE), INTERVAL -%s DAY)
+            """
+            params = (days, )
+            mycursor.execute(query, params)
+            rows_affected = mycursor.rowcount
+            conn.commit()
+            print('TRUNCATE:', rows_affected, 'price records deleted')
+
+        except (cn.Error, cn.Warning) as e:
+            print('Something wrong with deletePrice')
+            print('Query = ', query)
+            print('Days = ', days)
+            print('Error = ', e)
+            
+        finally:
+            mycursor.close()
+            conn.close()            
+       
             
     def updateIndicator(self, res, scope):
         try:
             cnx = create_engine('mysql+pymysql://' +ol.mysql_login.get('user')+ ':' +ol.mysql_login.get('password')+ '@' +ol.mysql_login.get('host')+ '/' + ol.mysql_login.get('database'))    
             
-            if scope == 'all':
+            if scope.upper() == 'ALL':
                 query = """
                 WITH missing_indicator AS (
                 SELECT MIN(p.price_utctime) AS min_price_utctime
                 from price p
                 JOIN indicator i ON i.price_id_fk = p.price_id
-                WHERE i.sma_50 IS NULL OR i.p_3whitesol IS NULL),
+                WHERE i.sma_50 IS NULL OR i.p_haramicross IS NULL),
                 result AS (
                 SELECT p.price_id, p.price_utctime as price_from, p.open, p.high, p.low, p.close 
                 from price p
@@ -477,7 +522,7 @@ class kucingBuku():
                 # add SMA_50
                 df['sma_50'] = SMA(df, timeperiod=5, price='open')
                 # add Three White Soldier
-                df['p_3whitesol'] = CDL3WHITESOLDIERS(df['open'], df['high'], df['low'], df['close'])
+                df['p_haramicross'] = CDLHARAMICROSS(df['open'], df['high'], df['low'], df['close'])
                 # round them to 8 decimals
                 df = df.round({'sma_50': 8})                
                 
@@ -491,13 +536,13 @@ class kucingBuku():
                 update indicator i
                 join temptable_indicator t on t.price_id = i.price_id_fk
                 SET i.sma_50 = ROUND(t.sma_50, 8),
-                    i.p_3whitesol = t.p_3whitesol
+                    i.p_haramicross = t.p_haramicross
                 """
-                # where (t.sma_50 is not null or t.p_3whitesol is not null)
+                # where (t.sma_50 is not null or t.p_haramicross is not null)
                 cnx.execute(query)
-                print('Indicator table is updated')
+                print('INDICATOR: Refreshed') if scope.upper() == 'ALL' else print('INDICATOR: Updated')
             else:
-                print('Data Frame is empty - no data')
+                print('INDICATOR: Nothing to update')
         except:
             print('Something wrong with updateIndicator')
             print('Query = ', query)
