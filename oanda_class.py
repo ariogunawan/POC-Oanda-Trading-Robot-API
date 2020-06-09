@@ -509,7 +509,7 @@ class kucingBuku():
                 query = """
                 SELECT price_id, price_utctime as price_from, open, high, low, close 
                 from price 
-                where price_utctime > %(price_from)s
+                where price_utctime > ADDDATE(CAST(%(price_from)s AS DATE), INTERVAL -2 HOUR)
                 and instrument = %(instrument)s
                 and granularity = %(granularity)s
                 and price_type = case %(price_type)s when 'M' then 'mid' when 'B' then 'bid' else 'ask' end 
@@ -535,10 +535,11 @@ class kucingBuku():
                 query = """
                 update indicator i
                 join temptable_indicator t on t.price_id = i.price_id_fk
-                SET i.sma_50 = ROUND(t.sma_50, 8),
+                SET i.sma_50 = ROUND(coalesce(t.sma_50, i.sma_50), 8),
                     i.p_haramicross = t.p_haramicross
                 """
                 # where (t.sma_50 is not null or t.p_haramicross is not null)
+                # -- this where condition is to exclude SMA where it may have null value
                 cnx.execute(query)
                 print('INDICATOR: Refreshed') if scope.upper() == 'ALL' else print('INDICATOR: Updated')
             else:
