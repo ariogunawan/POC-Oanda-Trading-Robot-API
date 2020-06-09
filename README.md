@@ -13,9 +13,13 @@ d. If all 3 checkers = Passed, then open a position
 
 ## Important candlestick
 three line strike
+
 belt hold
+
 harami cross
+
 ladder bottom
+
 marubozu
 
 ## To Improve
