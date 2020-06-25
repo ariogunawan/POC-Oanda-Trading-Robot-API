@@ -286,6 +286,24 @@ class kucingJoget():
         endpoint_url += url
         r = self.session.request(method, endpoint_url, headers=self.headers)
         return r.json()    
+
+    def createAccountOrder(self, d_createAccountOrder):
+        method = 'POST'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/orders'
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers, json=d_createAccountOrder)
+        return r.json()
+
+    def replaceAccountOrder(self, d_replaceAccountOrder, orderID):
+        method = 'PUT'
+        url = '/v3/accounts/' + ol.login.get('account') + \
+            '/trades/' + orderID + '/orders'
+        endpoint_url = ol.login.get('endpoint_url')
+        endpoint_url += url
+        r = self.session.request(method, endpoint_url, headers=self.headers, json=d_replaceAccountOrder)
+        return r.json()
     
 
 class kucingBuku():
