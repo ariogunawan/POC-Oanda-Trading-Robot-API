@@ -57,10 +57,8 @@ This repository contains a Proof of Concept (POC) for a trading robot designed f
 
 ## Project Structure
 
-- `main.py`: The main script to run the trading robot.
-- `oanda_api.py`: Contains functions to interact with the OANDA API.
-- `strategy.py`: Contains the trading strategies.
-- `logger.py`: Contains functions for logging and monitoring.
+- `oanda_monitoring.py`: The main script to run the trading robot.
+- `oanda_class.py`: Contains functions to interact with the OANDA API.
 - `requirements.txt`: List of required Python packages.
 - `.env.example`: Example environment file for OANDA API credentials.
 
